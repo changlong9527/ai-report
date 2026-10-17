@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tech Frontier Weekly</title>
+  <style>
+    /* 流式字体：在 375px（手机）~840px（容器封顶）区间随宽度连续线性缩放 */
+    /* header 区域（含 meta/desc）与背景图严格同步缩放：斜率 = 原设计值(680px 基准)/680，上限 = 原值×840/680。
+       任意宽度下文字与背景图的比例恒定，视觉效果等同浏览器整体缩放；下限为小屏可读性保底值。 */
+    .header-overlay-pad { padding: clamp(10px, 2.65vw, 22.2px) clamp(14px, 4.41vw, 37.1px); }
+    .header-title-text { font-size: clamp(15px, 3.53vw, 29.6px); line-height: 1.35; }
+    .header-week-label { font-size: clamp(9px, 1.91vw, 16.1px); }
+    .header-week-num { font-size: clamp(20px, 5.59vw, 47px); }
+    .meta-info-text { font-size: clamp(11px, 1.76vw, 14.8px); }
+    .desc-pad { font-size: clamp(13px, 2.06vw, 17.3px); }
+    /* 正文区域与 header/背景图同一缩放规则：680px 基准、上限 = 原设计值×840/680，全页比例一致 */
+    .overview-title-pad { font-size: clamp(18px, 3.24vw, 27.2px); line-height: 1.36; }
+    .overview-card-count { font-size: clamp(20px, 4.12vw, 34.6px); }
+    .overview-card-name { font-size: clamp(11px, 1.91vw, 16.1px); }
+    .overview-card-sub { font-size: clamp(9px, 1.62vw, 13.6px); }
+    .section-title-text { font-size: clamp(16px, 3.06vw, 25.8px); line-height: 1.36; }
+    .section-body-text { font-size: clamp(13px, 2.21vw, 18.6px); line-height: 1.6; }
+    .bullet-item { font-size: clamp(13px, 2.21vw, 18.6px); line-height: 1.6; }
+
+    /* 以下仅保留 padding 的断点覆盖，字号已改为上方的连续 clamp 方案 */
+    @media only screen and (max-width: 600px) {
+      .header-title-text { white-space: normal !important; letter-spacing: normal !important; }
+      .meta-info-pad { padding: 8px 16px !important; }
+      .meta-info-text { display: block !important; width: 100% !important; text-align: left !important; }
+      .desc-pad { padding: 10px 16px 14px 16px !important; }
+      .overview-title-pad { padding: 0 16px 8px 16px !important; }
+      .overview-cards-pad { padding: 0 16px 14px 16px !important; }
+      .overview-card-pad { padding: 8px 6px !important; }
+      /* 卡名预留两行高度（line-height:1.2 × 2 = 2.4em）：保证同一行内各卡片的
+         数字、子描述起始线跨卡对齐；子描述不预留，卡片高度由该 tr 内最高内容
+         动态决定（td 天然同行等高），内容少的行整体更矮、留白更少 */
+      .overview-card-name { min-height: 2.4em !important; }
+      .section-wrap-pad { padding: 0 16px 10px 16px !important; }
+      .section-content-pad { padding: 14px 14px !important; }
+      /* 章节卡片小屏圆角同步缩小：竖线已缩到 4px，外框 14px 大圆角相对显突出/不协调，
+         外框与竖线左圆角一起缩到 10px，比例更精致协调。
+         竖线去左border + 自带上下1px深蓝border顶到外缘，圆角取外框外圆角值(10px)，
+         使深蓝竖线覆盖外框圆角处那根浅灰 border 线，而非仅藏在 border 内侧 */
+      .section-card { border-radius: 10px !important; }
+      .section-bar { width: 4px !important; border-radius: 10px 0 0 10px !important; }
+      .footer-pad { padding: 14px 16px !important; }
+    }
+  </style>
+</head>
+<body style="margin:0; padding:0; background-color:#ffffff; font-family:Arial, Helvetica, 'Microsoft YaHei', sans-serif; color:#1f2937;">
+
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#ffffff; padding:0;">
+  <tr>
+    <td align="center">
+
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" class="email-container"
+        style="width:100%; max-width:840px; background-color:#ffffff; border-radius:0 0 18px 18px; overflow:hidden; border:1px solid #dbe5ef;">
+
+        <!-- Header (Title + Week Badge) - rendered as image to bypass OWA sanitize -->
+        <tr>
+          <td style="line-height:0; font-size:0; padding:0;">
+            <img src="https://wct-llm-oss.oss-accelerate.aliyuncs.com/gpt-proxy/oss/2026-10-17/3cb8540080b94a3199a97e3993ec1e0c-jinguang_tech_report_header_20261017125602.png" alt="" width="840" style="display:block; width:100%; max-width:840px; height:auto; border:0;">
+          </td>
+        </tr>
+
+<!-- Meta Info Row (Observation Period + Generation Time) -->
+        <tr>
+          <td class="meta-info-pad" style="padding:8px 30px 8px 30px; background-color:#e7f1fb; background-image:radial-gradient(ellipse at center, #e7f1fb 0%, #f3f8fd 100%);">
+            <table width="100%" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td align="left" class="meta-info-text" style="font-weight:400; color:#0f172a; line-height:1.4; font-family:Arial, 'Helvetica Neue', Helvetica, sans-serif;">
+                  Observation Period: 2026/10/10–2026/10/16 (Week 42)
+                </td>
+                <td align="right" class="meta-info-text" style="font-weight:400; color:#0f172a; line-height:1.4; font-family:Arial, 'Helvetica Neue', Helvetica, sans-serif;">
+                  Generation Time: 2026-10-17 12:31:43
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Description -->
+        <tr>
+          <td class="desc-pad" style="padding:10px 30px 16px 30px; color:#333; line-height:1.6; font-family:Arial, 'Helvetica Neue', Helvetica, sans-serif;">
+            A concise overview of this week's key developments across AI, telecom, fintech, health, investment.
+          </td>
+        </tr>
+
+        <!-- Weekly Overview Title -->
+        <tr>
+          <td class="overview-title-pad" style="padding:0 30px 8px 30px; color:#0f172a; font-weight:bold; font-family:Arial, Helvetica, 'Microsoft YaHei', sans-serif;">
+            Weekly Overview
+          </td>
+        </tr>
+
+        <!-- Weekly Overview Cards Grid -->
+        <tr>
+          <td class="overview-cards-pad" style="padding:0 30px 18px 30px;">
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:separate; border-spacing:6px;">
+              <tr>
+                <td width="33.33%" valign="top" class="overview-card-pad" style="background-color:#dcf0fb; background-image:radial-gradient(circle at center, #dcf0fb 0%, #edf7fd 100%); border-radius:4px; padding:6px 6px 5px 6px; text-align:center;">
+                  <div class="overview-card-count" style="font-weight:600; color:#111111; line-height:1; font-family:Arial, 'Helvetica Neue', Helvetica, sans-serif;">8</div>
+                  <div class="overview-card-name" style="font-weight:700; color:#111111; line-height:1.2; margin-top:5px; font-family:Arial, 'Helvetica Neue', Helvetica, sans-serif;">Embodied AI</div>
+                  <div class="overview-card-sub" style="color:#111111; line-height:1.2; margin-top:0; font-family:Arial, 'Helvetica Neue', Helvetica, sans-serif;">Robotics &middot; VLA</div>
+                </td>
+                <td width="33.33%" valign="top" class="overview-card-pad" style="background-color:#e6ebfc; background-image:radial-gradient(circle at center, #e6ebfc 0%, #f2f5fd 100%); border-radius:4px; padding:6px 6px 5px 6px; text-align:center;">
+                  <div class="overview-card-count" style="font-weight:600; color:#111111; line-height:1; font-family:Arial, 'Helvetica Neue', Helvetica, sans-serif;">4</div>
+                  <div class="overview-card-name" style="font-weight:700; color:#111111; line-height:1.2; margin-top:5px; font-family:Arial, 'Helvetica Neue', Helvetica, sans-serif;">AI Models</div>
+                  <div class="overview-card-sub" style="color:#111111; line-height:1.2; margin-top:0; font-family:Arial, 'Helvetica Neue', Helvetica, sans-serif;">Foundation Models</div>
+                </td>
+                <td width="33.33%" valign="top" class="overview-card-pad" style="background-color:#d7f3fb; background-image:radial-gradient(circle at center, #d7f3fb 0%, #ebf9fd 100%); border-radius:4px; padding:6px 6px 5px 6px; text-align:center;">
+                  <div class="overview-card-count" style="font-weight:600; color:#111111; line-height:1; font-family:Arial, 'Helvetica Neue', Helvetica, sans-serif;">6</div>
+                  <div class="overview-card-name" style="font-weight:700; color:#111111; line-height:1.2; margin-top:5px; font-family:Arial, 'Helvetica Neue', Helvetica, sans-serif;">AI-Native Applications</div>
+                  <div class="overview-card-sub" style="color:#111111; line-height:1.2; margin-top:0; font-family:Arial, 'Helvetica Neue', Helvetica, sans-serif;">Agents &middot; Enterprise AI</div>
+                </td>
+              </tr>
+              <tr>
+                <td width="33.33%" valign="top" class="overview-card-pad" style="background-color:#d5f3fa; background-image:radial-gradient(circle at center, #d5f3fa 0%, #eaf9fc 100%); border-radius:4px; padding:6px 6px 5px 6px; text-align:center;">
+                  <div class="overview-card-count" style="font-weight:600; color:#111111; line-height:1; font-family:Arial, 'Helvetica Neue', Helvetica, sans-serif;">18</div>
+                  <div class="overview-card-name" style="font-weight:700; color:#111111; line-height:1.2; margin-top:5px; font-family:Arial, 'Helvetica Neue', Helvetica, sans-serif;">Telecom Industry</div>
+                  <div class="overview-card-sub" style="color:#111111; line-height:1.2; margin-top:0; font-family:Arial, 'Helvetica Neue', Helvetica, sans-serif;">AI Network</div>
+                </td>
+                <td width="33.33%" valign="top" class="overview-card-pad" style="background-color:#dafbe7; background-image:radial-gradient(circle at center, #dafbe7 0%, #ecfdf3 100%); border-radius:4px; padding:6px 6px 5px 6px; text-align:center;">
+                  <div class="overview-card-count" style="font-weight:600; color:#111111; line-height:1; font-family:Arial, 'Helvetica Neue', Helvetica, sans-serif;">11</div>
+                  <div class="overview-card-name" style="font-weight:700; color:#111111; line-height:1.2; margin-top:5px; font-family:Arial, 'Helvetica Neue', Helvetica, sans-serif;">FinTech &amp; HealthTech</div>
+                  <div class="overview-card-sub" style="color:#111111; line-height:1.2; margin-top:0; font-family:Arial, 'Helvetica Neue', Helvetica, sans-serif;">Payment &middot; Medical AI</div>
+                </td>
+                <td width="33.33%" valign="top" class="overview-card-pad" style="background-color:#fae5e1; background-image:radial-gradient(circle at center, #fae5e1 0%, #fcf2f0 100%); border-radius:4px; padding:6px 6px 5px 6px; text-align:center;">
+                  <div class="overview-card-count" style="font-weight:600; color:#111111; line-height:1; font-family:Arial, 'Helvetica Neue', Helvetica, sans-serif;">7</div>
+                  <div class="overview-card-name" style="font-weight:700; color:#111111; line-height:1.2; margin-top:5px; font-family:Arial, 'Helvetica Neue', Helvetica, sans-serif;">Investment &amp; Financing</div>
+                  <div class="overview-card-sub" style="color:#111111; line-height:1.2; margin-top:0; font-family:Arial, 'Helvetica Neue', Helvetica, sans-serif;">Funding &middot; Capital</div>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Section: Embodied AI -->
+        <tr>
+          <td id="section-embodied-ai" class="section-wrap-pad" style="padding:0 36px 12px 36px;">
+            <table class="section-card" width="100%" cellpadding="0" cellspacing="0" border="0"
+              style="border:1px solid #c7dff7; border-left:none; border-radius:14px; background-color:#ffffff;">
+              <tr>
+                <td class="section-bar" width="6" style="width:6px; background-color:#0f5fa8; border-top:1px solid #0f5fa8; border-bottom:1px solid #0f5fa8; border-radius:14px 0 0 14px; font-size:0;">&nbsp;</td>
+                <td class="section-content-pad" style="padding:20px 22px;">
+                  <div class="section-title-text" style="color:#0f172a; font-weight:bold;">
+                    Embodied AI
+                  </div>
+                    <div class="section-body-text" style="margin-top:10px; color:#334155;">
+                      This period, the embodied AI sector shows dual-track breakthroughs in multimodal foundation models and industrial-grade robots.
+                    </div>
+                    <ul style="margin-top:10px; margin-left:0; padding-left:20px; list-style-type:disc;">
+                      <li class="bullet-item" style="margin-bottom:6px; color:#334155;">NEURA Robotics released the Neuron AI multimodal foundation model. Built on a Perception-Language-Action (PLA) architecture, it fuses 3D vision, touch, force, audio, and other multimodal inputs, supporting cross-fleet deployment across five NEURA robot embodiments;
+                        <div style="margin-top:10px; margin-bottom:8px; text-align:center;">
+                          <a href="https://wct-llm-oss.oss-accelerate.aliyuncs.com/gpt-proxy/oss/2026-10-17/ea964762161c427d8e90544111b6e2eb-NeuronAI.png" target="_blank" rel="noopener noreferrer" data-zoom="1"
+                            style="display:block; text-decoration:none; border:0; outline:none;">
+                            <img
+                              src="https://wct-llm-oss.oss-accelerate.aliyuncs.com/gpt-proxy/oss/2026-10-17/ea964762161c427d8e90544111b6e2eb-NeuronAI.png"
+                              alt=""
+                              style="display:block; max-width:100%; width:100%; height:auto; border:0; border-radius:8px; margin:0 auto; cursor:zoom-in;">
+                          </a>
+                        </div></li>
+                      <li class="bullet-item" style="margin-bottom:6px; color:#334155;">Hesai Technology launched the Kosmo 3D World Data Engine, fusing LiDAR with 8K imagery to complete the scanning and reconstruction of a 100-square-meter space in 15 minutes;
+                        <div style="margin-top:10px; margin-bottom:8px; text-align:center;">
+                          <a href="https://wct-llm-oss.oss-cn-hangzhou.aliyuncs.com/gpt-proxy/oss/2026-10-17/0ce220b055c749e39184bd7d69aaf4df-172e3a192dc4.png" target="_blank" rel="noopener noreferrer" data-zoom="1"
+                            style="display:block; text-decoration:none; border:0; outline:none;">
+                            <img
+                              src="https://wct-llm-oss.oss-cn-hangzhou.aliyuncs.com/gpt-proxy/oss/2026-10-17/0ce220b055c749e39184bd7d69aaf4df-172e3a192dc4.png"
+                              alt=""
+                              style="display:block; max-width:100%; width:100%; height:auto; border:0; border-radius:8px; margin:0 auto; cursor:zoom-in;">
+                          </a>
+                        </div></li>
+                      <li class="bullet-item" style="margin-bottom:6px; color:#334155;">JAKA released the JAKA Kargo50 heavy-duty wheeled humanoid robot, featuring L4 intelligence level, compressing single-box operation cycle time from 105 seconds to 28 seconds;
+                        <div style="margin-top:10px; margin-bottom:8px; text-align:center;">
+                          <a href="https://wct-llm-oss.oss-cn-hangzhou.aliyuncs.com/gpt-proxy/oss/2026-10-17/2747d49aab1842a1a9ea9b4dbc89db49-5da8e18ce3f9.png" target="_blank" rel="noopener noreferrer" data-zoom="1"
+                            style="display:block; text-decoration:none; border:0; outline:none;">
+                            <img
+                              src="https://wct-llm-oss.oss-cn-hangzhou.aliyuncs.com/gpt-proxy/oss/2026-10-17/2747d49aab1842a1a9ea9b4dbc89db49-5da8e18ce3f9.png"
+                              alt=""
+                              style="display:block; max-width:100%; width:100%; height:auto; border:0; border-radius:8px; margin:0 auto; cursor:zoom-in;">
+                          </a>
+                        </div></li>
+                      <li class="bullet-item" style="margin-bottom:6px; color:#334155;">LOGIANT launched the FlyPick 2.0 sorting robot, with 162 units deployed in a single project and a peak throughput of 7,500 items per hour;
+                        <div style="margin-top:10px; margin-bottom:8px; text-align:center;">
+                          <a href="https://wct-llm-oss.oss-cn-hangzhou.aliyuncs.com/gpt-proxy/oss/2026-10-17/38ad8f77c56d4d17986ae762e2627255-c74961f08734.png" target="_blank" rel="noopener noreferrer" data-zoom="1"
+                            style="display:block; text-decoration:none; border:0; outline:none;">
+                            <img
+                              src="https://wct-llm-oss.oss-cn-hangzhou.aliyuncs.com/gpt-proxy/oss/2026-10-17/38ad8f77c56d4d17986ae762e2627255-c74961f08734.png"
+                              alt=""
+                              style="display:block; max-width:100%; width:100%; height:auto; border:0; border-radius:8px; margin:0 auto; cursor:zoom-in;">
+                          </a>
+                        </div></li>
+                      <li class="bullet-item" style="margin-bottom:6px; color:#334155;">DOBOT released the VEGA 7, a native embodied seven-axis force-controlled arm featuring a repeat accuracy of ±0.03mm and an MTBF of 50,000 hours;
+                        <div style="margin-top:10px; margin-bottom:8px; text-align:center;">
+                          <a href="https://wct-llm-oss.oss-cn-hangzhou.aliyuncs.com/gpt-proxy/oss/2026-10-17/21e833a3ce6543acb219f84411b0c7d0-61381a07a8d3.png" target="_blank" rel="noopener noreferrer" data-zoom="1"
+                            style="display:block; text-decoration:none; border:0; outline:none;">
+                            <img
+                              src="https://wct-llm-oss.oss-cn-hangzhou.aliyuncs.com/gpt-proxy/oss/2026-10-17/21e833a3ce6543acb219f84411b0c7d0-61381a07a8d3.png"
+                              alt=""
+                              style="display:block; max-width:100%; width:100%; height:auto; border:0; border-radius:8px; margin:0 auto; cursor:zoom-in;">
+                          </a>
+                        </div></li>
+                      <li class="bullet-item" style="margin-bottom:6px; color:#334155;">Inovance launched the InoBot W1 wheeled humanoid robot, featuring dual 7-DOF bionic robotic arms and full-body liquid cooling designed for demanding industrial operating conditions;
+                        <div style="margin-top:10px; margin-bottom:8px; text-align:center;">
+                          <a href="https://wct-llm-oss.oss-cn-hangzhou.aliyuncs.com/gpt-proxy/oss/2026-10-17/bd4e5687863441199d7efab23b5c87d5-e0bbf8a40705.png" target="_blank" rel="noopener noreferrer" data-zoom="1"
+                            style="display:block; text-decoration:none; border:0; outline:none;">
+                            <img
+                              src="https://wct-llm-oss.oss-cn-hangzhou.aliyuncs.com/gpt-proxy/oss/2026-10-17/bd4e5687863441199d7efab23b5c87d5-e0bbf8a40705.png"
+                              alt=""
+                              style="display:block; max-width:100%; width:100%; height:auto; border:0; border-radius:8px; margin:0 auto; cursor:zoom-in;">
+                          </a>
+                        </div></li>
+                      <li class="bullet-item" style="margin-bottom:6px; color:#334155;">FAIRINO showcased the BW10-Lite industrial-grade embodied AI robot, which is powered by an industrial domain-specific large model to autonomously handle end-to-end material circulation operations;
+                        <div style="margin-top:10px; margin-bottom:8px; text-align:center;">
+                          <a href="https://wct-llm-oss.oss-accelerate.aliyuncs.com/gpt-proxy/oss/2026-10-17/7126267a2e3c4cbfb1b78c55a1bb0f61-BW10-Lite.png" target="_blank" rel="noopener noreferrer" data-zoom="1"
+                            style="display:block; text-decoration:none; border:0; outline:none;">
+                            <img
+                              src="https://wct-llm-oss.oss-accelerate.aliyuncs.com/gpt-proxy/oss/2026-10-17/7126267a2e3c4cbfb1b78c55a1bb0f61-BW10-Lite.png"
+                              alt=""
+                              style="display:block; max-width:100%; width:100%; height:auto; border:0; border-radius:8px; margin:0 auto; cursor:zoom-in;">
+                          </a>
+                        </div></li>
+                      <li class="bullet-item" style="margin-bottom:6px; color:#334155;">Chietom exhibited the CT-HYP-25S integrated joint module, China's first joint module featuring hypoid gear transmission, which ranks second globally and first domestically in this market segment;
+                        <div style="margin-top:10px; margin-bottom:8px; text-align:center;">
+                          <a href="https://wct-llm-oss.oss-cn-hangzhou.aliyuncs.com/gpt-proxy/oss/2026-10-17/65a9cdaf98d34710bba5b096ae4cd35f-12b8c43cf3c9.png" target="_blank" rel="noopener noreferrer" data-zoom="1"
+                            style="display:block; text-decoration:none; border:0; outline:none;">
+                            <img
+                              src="https://wct-llm-oss.oss-cn-hangzhou.aliyuncs.com/gpt-proxy/oss/2026-10-17/65a9cdaf98d34710bba5b096ae4cd35f-12b8c43cf3c9.png"
+                              alt=""
+                              style="display:block; max-width:100%; width:100%; height:auto; border:0; border-radius:8px; margin:0 auto; cursor:zoom-in;">
+                          </a>
+                        </div></li>
+                    </ul>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Section: AI Models -->
+        <tr>
+          <td id="section-ai-models" class="section-wrap-pad" style="padding:0 36px 12px 36px;">
+            <table class="section-card" width="100%" cellpadding="0" cellspacing="0" border="0"
+              style="border:1px solid #d8b4fe; border-left:none; border-radius:14px; background-color:#ffffff;">
+              <tr>
+                <td class="section-bar" width="6" style="width:6px; background-color:#7c3aed; border-top:1px solid #7c3aed; border-bottom:1px solid #7c3aed; border-radius:14px 0 0 14px; font-size:0;">&nbsp;</td>
+                <td class="section-content-pad" style="padding:20px 22px;">
+                  <div class="section-title-text" style="color:#0f172a; font-weight:bold;">
+                    AI Models
+                  </div>
+                    <div class="section-body-text" style="margin-top:10px; color:#334155;">
+                      This period, the AI model sector witnesses multi-dimensional fierce competition between open-source and closed-source models.
+                    </div>
+                    <ul style="margin-top:10px; margin-left:0; padding-left:20px; list-style-type:disc;">
+                      <li class="bullet-item" style="margin-bottom:6px; color:#334155;">NVIDIA released the Nemotron 3.5 Super VL flagship open-source multimodal model, featuring a 120B-parameter MoE architecture, 1 million token context, GPQA-Diamond scientific reasoning score of 89.90, and up to 5x improvement in inference throughput;
+                        <div style="margin-top:10px; margin-bottom:8px; text-align:center;">
+                          <a href="https://wct-llm-oss.oss-accelerate.aliyuncs.com/gpt-proxy/oss/2026-10-17/3a9c760103844c91b41a63d66e43351a-Nemotron3.5SuperVL.png" target="_blank" rel="noopener noreferrer" data-zoom="1"
+                            style="display:block; text-decoration:none; border:0; outline:none;">
+                            <img
+                              src="https://wct-llm-oss.oss-accelerate.aliyuncs.com/gpt-proxy/oss/2026-10-17/3a9c760103844c91b41a63d66e43351a-Nemotron3.5SuperVL.png"
+                              alt=""
+                              style="display:block; max-width:100%; width:100%; height:auto; border:0; border-radius:8px; margin:0 auto; cursor:zoom-in;">
+                          </a>
+                        </div></li>
+                      <li class="bullet-item" style="margin-bottom:6px; color:#334155;">Meta launched the Muse Wonder series of closed-source models, featuring proactive memory and Active Focus capabilities, with initial user retention rate as high as 73%;
+                        <div style="margin-top:10px; margin-bottom:8px; text-align:center;">
+                          <a href="https://wct-llm-oss.oss-cn-hangzhou.aliyuncs.com/gpt-proxy/oss/2026-10-17/5a857a1bf7334a279a2fa3922c8f5de1-485fee29a5f8.png" target="_blank" rel="noopener noreferrer" data-zoom="1"
+                            style="display:block; text-decoration:none; border:0; outline:none;">
+                            <img
+                              src="https://wct-llm-oss.oss-cn-hangzhou.aliyuncs.com/gpt-proxy/oss/2026-10-17/5a857a1bf7334a279a2fa3922c8f5de1-485fee29a5f8.png"
+                              alt=""
+                              style="display:block; max-width:100%; width:100%; height:auto; border:0; border-radius:8px; margin:0 auto; cursor:zoom-in;">
+                          </a>
+                        </div></li>
+                      <li class="bullet-item" style="margin-bottom:6px; color:#334155;">Meta simultaneously open-sourced the Muse Spark Open model, with 816B total parameters and 42B activated, capable of running locally on dual Mac Studios, making it the first desktop-deployable model of its kind;
+                        <div style="margin-top:10px; margin-bottom:8px; text-align:center;">
+                          <a href="https://wct-llm-oss.oss-cn-hangzhou.aliyuncs.com/gpt-proxy/oss/2026-10-17/a2766af7146044638a80b87603d03cf8-2bba4da78152.png" target="_blank" rel="noopener noreferrer" data-zoom="1"
+                            style="display:block; text-decoration:none; border:0; outline:none;">
+                            <img
+                              src="https://wct-llm-oss.oss-cn-hangzhou.aliyuncs.com/gpt-proxy/oss/2026-10-17/a2766af7146044638a80b87603d03cf8-2bba4da78152.png"
+                              alt=""
+                              style="display:block; max-width:100%; width:100%; height:auto; border:0; border-radius:8px; margin:0 auto; cursor:zoom-in;">
+                          </a>
+                        </div></li>
+                      <li class="bullet-item" style="margin-bottom:6px; color:#334155;">Black Forest Labs released the FLUX 3 Image Klein open-weights image model, with 5.6B parameters supporting native 4K generation and pixel-level precise editing, outperforming the closed-source Ideogram V4.5;
+                        <div style="margin-top:10px; margin-bottom:8px; text-align:center;">
+                          <a href="https://wct-llm-oss.oss-cn-hangzhou.aliyuncs.com/gpt-proxy/oss/2026-10-17/d4be74873d1f4ee4b6d8244622754fed-1ff011867f28.png" target="_blank" rel="noopener noreferrer" data-zoom="1"
+                            style="display:block; text-decoration:none; border:0; outline:none;">
+                            <img
+                              src="https://wct-llm-oss.oss-cn-hangzhou.aliyuncs.com/gpt-proxy/oss/2026-10-17/d4be74873d1f4ee4b6d8244622754fed-1ff011867f28.png"
+                              alt=""
+                              style="display:block; max-width:100%; width:100%; height:auto; border:0; border-radius:8px; margin:0 auto; cursor:zoom-in;">
+                          </a>
+                        </div></li>
+                    </ul>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Section: AI Native Applications -->
+        <tr>
+          <td id="section-ai-native-applications" class="section-wrap-pad" style="padding:0 36px 12px 36px;">
+            <table class="section-card" width="100%" cellpadding="0" cellspacing="0" border="0"
+              style="border:1px solid #99e6cc; border-left:none; border-radius:14px; background-color:#ffffff;">
+              <tr>
+                <td class="section-bar" width="6" style="width:6px; background-color:#0f766e; border-top:1px solid #0f766e; border-bottom:1px solid #0f766e; border-radius:14px 0 0 14px; font-size:0;">&nbsp;</td>
+                <td class="section-content-pad" style="padding:20px 22px;">
+                  <div class="section-title-text" style="color:#0f172a; font-weight:bold;">
+                    AI Native Applications
+                  </div>
+                    <div class="section-body-text" style="margin-top:10px; color:#334155;">
+                      This period, AI native applications cover scientific research automation, document review, coding agents, office Agents, and personal hardware devices.
+                    </div>
+                    <ul style="margin-top:10px; margin-left:0; padding-left:20px; list-style-type:disc;">
+                      <li class="bullet-item" style="margin-bottom:6px; color:#334155;">Sakana AI Labs released AI Scientist v3, which supports parallel agent orchestration for the full research loop; a newly discovered learning algorithm generated by the system has been accepted as an oral presentation at ALIFE 2026;
+                        <div style="margin-top:10px; margin-bottom:8px; text-align:center;">
+                          <a href="https://wct-llm-oss.oss-cn-hangzhou.aliyuncs.com/gpt-proxy/oss/2026-10-17/b563c973df1f4e6dae1eac628b1fdc2a-b606e0916630.png" target="_blank" rel="noopener noreferrer" data-zoom="1"
+                            style="display:block; text-decoration:none; border:0; outline:none;">
+                            <img
+                              src="https://wct-llm-oss.oss-cn-hangzhou.aliyuncs.com/gpt-proxy/oss/2026-10-17/b563c973df1f4e6dae1eac628b1fdc2a-b606e0916630.png"
+                              alt=""
+                              style="display:block; max-width:100%; width:100%; height:auto; border:0; border-radius:8px; margin:0 auto; cursor:zoom-in;">
+                          </a>
+                        </div></li>
+                      <li class="bullet-item" style="margin-bottom:6px; color:#334155;">Google launched the Deep Review agent review system, a four-stage Agent pipeline providing rigorous feedback for technical documents, having provided pre-submission feedback for over 16,000 submissions;
+                        <div style="margin-top:10px; margin-bottom:8px; text-align:center;">
+                          <a href="https://wct-llm-oss.oss-accelerate.aliyuncs.com/gpt-proxy/oss/2026-10-17/887df1f2ccfc4820a47289f292986d5a-DeepReview.png" target="_blank" rel="noopener noreferrer" data-zoom="1"
+                            style="display:block; text-decoration:none; border:0; outline:none;">
+                            <img
+                              src="https://wct-llm-oss.oss-accelerate.aliyuncs.com/gpt-proxy/oss/2026-10-17/887df1f2ccfc4820a47289f292986d5a-DeepReview.png"
+                              alt=""
+                              style="display:block; max-width:100%; width:100%; height:auto; border:0; border-radius:8px; margin:0 auto; cursor:zoom-in;">
+                          </a>
+                        </div></li>
+                      <li class="bullet-item" style="margin-bottom:6px; color:#334155;">OpenCode 2.0, a fully open-source AI coding agent, was released, supporting full-repository code understanding and local deployment, ranking runner-up on Product Hunt on its first day;
+                        <div style="margin-top:10px; margin-bottom:8px; text-align:center;">
+                          <a href="https://wct-llm-oss.oss-accelerate.aliyuncs.com/gpt-proxy/oss/2026-10-17/426016cc7f13406089a7ae448d8bd8d5-OpenCode2.0.png" target="_blank" rel="noopener noreferrer" data-zoom="1"
+                            style="display:block; text-decoration:none; border:0; outline:none;">
+                            <img
+                              src="https://wct-llm-oss.oss-accelerate.aliyuncs.com/gpt-proxy/oss/2026-10-17/426016cc7f13406089a7ae448d8bd8d5-OpenCode2.0.png"
+                              alt=""
+                              style="display:block; max-width:100%; width:100%; height:auto; border:0; border-radius:8px; margin:0 auto; cursor:zoom-in;">
+                          </a>
+                        </div></li>
+                      <li class="bullet-item" style="margin-bottom:6px; color:#334155;">Alibaba released QwenWork E-commerce Edition, positioned as an independent third-party e-commerce Agent, managing multi-store operations across platforms;</li>
+                      <li class="bullet-item" style="margin-bottom:6px; color:#334155;">Tsinghua University jointly released PilotDeck 2.0, a model-agnostic AI Agent OS with built-in Word/Excel/PPT skills, scoring 79.1 on Workbuddy Bench, surpassing Claude Code;
+                        <div style="margin-top:10px; margin-bottom:8px; text-align:center;">
+                          <a href="https://wct-llm-oss.oss-cn-hangzhou.aliyuncs.com/gpt-proxy/oss/2026-10-17/fe324dc70f2d45f0ac72a39305daaffd-7fc77a38fdc2.png" target="_blank" rel="noopener noreferrer" data-zoom="1"
+                            style="display:block; text-decoration:none; border:0; outline:none;">
+                            <img
+                              src="https://wct-llm-oss.oss-cn-hangzhou.aliyuncs.com/gpt-proxy/oss/2026-10-17/fe324dc70f2d45f0ac72a39305daaffd-7fc77a38fdc2.png"
+                              alt=""
+                              style="display:block; max-width:100%; width:100%; height:auto; border:0; border-radius:8px; margin:0 auto; cursor:zoom-in;">
+                          </a>
+                        </div></li>
+                      <li class="bullet-item" style="margin-bottom:6px; color:#334155;">Amazon launched the Bee Frontier personal AI device, recording ambient audio all day and converting it into summaries and to-dos, starting at $74.99;
+                        <div style="margin-top:10px; margin-bottom:8px; text-align:center;">
+                          <a href="https://wct-llm-oss.oss-accelerate.aliyuncs.com/gpt-proxy/oss/2026-10-17/3812912b6c7c4a7a9a487b0ac411fd77-BeeFrontier.png" target="_blank" rel="noopener noreferrer" data-zoom="1"
+                            style="display:block; text-decoration:none; border:0; outline:none;">
+                            <img
+                              src="https://wct-llm-oss.oss-accelerate.aliyuncs.com/gpt-proxy/oss/2026-10-17/3812912b6c7c4a7a9a487b0ac411fd77-BeeFrontier.png"
+                              alt=""
+                              style="display:block; max-width:100%; width:100%; height:auto; border:0; border-radius:8px; margin:0 auto; cursor:zoom-in;">
+                          </a>
+                        </div></li>
+                    </ul>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Section: Telecommunications Industry Dynamics -->
+        <tr>
+          <td id="section-telecommunications-industry-dynamics" class="section-wrap-pad" style="padding:0 36px 12px 36px;">
+            <table class="section-card" width="100%" cellpadding="0" cellspacing="0" border="0"
+              style="border:1px solid #fca5a5; border-left:none; border-radius:14px; background-color:#ffffff;">
+              <tr>
+                <td class="section-bar" width="6" style="width:6px; background-color:#be123c; border-top:1px solid #be123c; border-bottom:1px solid #be123c; border-radius:14px 0 0 14px; font-size:0;">&nbsp;</td>
+                <td class="section-content-pad" style="padding:20px 22px;">
+                  <div class="section-title-text" style="color:#0f172a; font-weight:bold;">
+                    Telecommunications Industry Dynamics
+                  </div>
+                    <div class="section-body-text" style="margin-top:10px; color:#334155;">
+                      This period, the telecommunications industry fully embraces AI infrastructure upgrades and agent ecosystem construction.
+                    </div>
+                    <ul style="margin-top:10px; margin-left:0; padding-left:20px; list-style-type:disc;">
+                      <li class="bullet-item" style="margin-bottom:6px; color:#334155;">U Mobile signed a memorandum of understanding to explore a private 5G+AI smart solar farm solution;</li>
+                      <li class="bullet-item" style="margin-bottom:6px; color:#334155;">Microsoft announced the expansion of the Maia series chips to multi-gigawatt-scale deployment, releasing the Maia 300 chip with a 40% improvement in compute capacity per megawatt;</li>
+                      <li class="bullet-item" style="margin-bottom:6px; color:#334155;">NVIDIA partnered with Cisco to announce the USFP pluggable optical module initiative, targeting AI factory network expansion;</li>
+                      <li class="bullet-item" style="margin-bottom:6px; color:#334155;">Google Cloud launched its general-purpose Gemini Agent platform, powered by Gemini 4 Argon, delivering up to an 80% increase in cost-efficiency;</li>
+                      <li class="bullet-item" style="margin-bottom:6px; color:#334155;">Anthropic is in talks with NTT to build a 500-megawatt large data center in Osaka;</li>
+                      <li class="bullet-item" style="margin-bottom:6px; color:#334155;">AMD released the Helion Agentic AI rack system, projecting the CPU market to exceed $200 billion by 2030;</li>
+                      <li class="bullet-item" style="margin-bottom:6px; color:#334155;">Nokia launched the Flexible 50G/25G/10G multi-PON solution and agreed to sell its Enterprise Campus Edge business to focus on its core networks;</li>
+                      <li class="bullet-item" style="margin-bottom:6px; color:#334155;">Cisco showcased high-trust collaboration solutions at WebexOne, covering zero-trust protection and post-quantum cryptography;</li>
+                      <li class="bullet-item" style="margin-bottom:6px; color:#334155;">Huawei AI accelerator shipments doubled to 572,000 units, with ADN solutions ranking first in OSS market share;</li>
+                      <li class="bullet-item" style="margin-bottom:6px; color:#334155;">Broadcom showcased its full line of switching chips and co-packaged optics solutions at the OCP Summit;</li>
+                      <li class="bullet-item" style="margin-bottom:6px; color:#334155;">Ericsson announced Q3 financial results, with organic sales growing 7% year-over-year and adjusted gross margin of 47.7%;</li>
+                      <li class="bullet-item" style="margin-bottom:6px; color:#334155;">Intel's CEO warned that the compute shortage could persist for two to three years, emphasizing the need to improve compute utilization efficiency;</li>
+                      <li class="bullet-item" style="margin-bottom:6px; color:#334155;">AT&amp;T sold its Mexico operations for $2 billion, focusing on domestic fiber and 5G buildout;</li>
+                      <li class="bullet-item" style="margin-bottom:6px; color:#334155;">ZTE presented its outlook for the Agentic AI era, projecting 190 million enterprise active agents in China by 2030;</li>
+                      <li class="bullet-item" style="margin-bottom:6px; color:#334155;">Alibaba Cloud's Qwen model was deployed in Indonesia's logistics and construction industry scenarios;</li>
+                      <li class="bullet-item" style="margin-bottom:6px; color:#334155;">China Mobile advanced the digital-intelligent transformation of magnetic material factories, releasing a tender announcement for the Ningxia intelligent computing resource pool;</li>
+                      <li class="bullet-item" style="margin-bottom:6px; color:#334155;">China Telecom took a stake in Guangzhou Computing Power Industry Development Company, promoting computing-power and electricity coordination;</li>
+                      <li class="bullet-item" style="margin-bottom:6px; color:#334155;">Telefonica Tech launched a smart water meter management platform, integrating the Kite IoT platform.</li>
+                    </ul>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Section: FinTech and HealthTech AI Dynamics -->
+        <tr>
+          <td id="section-fintech-and-healthtech-ai-dynamics" class="section-wrap-pad" style="padding:0 36px 12px 36px;">
+            <table class="section-card" width="100%" cellpadding="0" cellspacing="0" border="0"
+              style="border:1px solid #fcc49a; border-left:none; border-radius:14px; background-color:#ffffff;">
+              <tr>
+                <td class="section-bar" width="6" style="width:6px; background-color:#ea580c; border-top:1px solid #ea580c; border-bottom:1px solid #ea580c; border-radius:14px 0 0 14px; font-size:0;">&nbsp;</td>
+                <td class="section-content-pad" style="padding:20px 22px;">
+                  <div class="section-title-text" style="color:#0f172a; font-weight:bold;">
+                    FinTech and HealthTech AI Dynamics
+                  </div>
+                    <div class="section-body-text" style="margin-top:10px; color:#334155;">
+                      This period, FinTech focuses on agent commercialization, while HealthTech deepens AI diagnosis and treatment and precision medicine.
+                    </div>
+                    <ul style="margin-top:10px; margin-left:0; padding-left:20px; list-style-type:disc;">
+                      <li class="bullet-item" style="margin-bottom:6px; color:#334155;">FIS, in partnership with Anthropic, made its AML Investigations Agent commercially available for banks;</li>
+                      <li class="bullet-item" style="margin-bottom:6px; color:#334155;">Citigroup's AI coding platform covers 14,000 engineers, shortening the launch cycle for new financial products by 30%-40%;</li>
+                      <li class="bullet-item" style="margin-bottom:6px; color:#334155;">American Express published its Intent Intelligence Framework to help advance payment credential and intent standards for agentic commerce;</li>
+                      <li class="bullet-item" style="margin-bottom:6px; color:#334155;">Emprise Bank became the first to migrate its core system to an AI-native core banking platform;</li>
+                      <li class="bullet-item" style="margin-bottom:6px; color:#334155;">Privy partnered with Ripple to launch embedded wallets capable of supporting agentic payments;</li>
+                      <li class="bullet-item" style="margin-bottom:6px; color:#334155;">PayPal partnered with Glance to integrate agentic commerce tools into its ecosystem, reaching tens of millions of users;</li>
+                      <li class="bullet-item" style="margin-bottom:6px; color:#334155;">Google Health released an AI health research review, showing that AI mammography screening identified 25% of interval cancers missed during routine screenings across 125,000 women;</li>
+                      <li class="bullet-item" style="margin-bottom:6px; color:#334155;">UnitedHealth Group's AI agents reduced clinician chart review time by 33%, as reported in its Q3 2026 earnings;</li>
+                      <li class="bullet-item" style="margin-bottom:6px; color:#334155;">Philips' AI-driven MRI solutions surpassed 1,000 installations, improving scan speed by up to 3x;</li>
+                      <li class="bullet-item" style="margin-bottom:6px; color:#334155;">Tempus AI released a whole genome sequencing solution for rare disease diagnosis;</li>
+                      <li class="bullet-item" style="margin-bottom:6px; color:#334155;">Roche showcased the AXELIOS 1 genome sequencing platform, with integrated real-time data analysis to accelerate genomic research workflows.</li>
+                    </ul>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Section: Investment and Financing Dynamics -->
+        <tr>
+          <td id="section-investment-and-financing-dynamics" class="section-wrap-pad" style="padding:0 36px 12px 36px;">
+            <table class="section-card" width="100%" cellpadding="0" cellspacing="0" border="0"
+              style="border:1px solid #93c5fd; border-left:none; border-radius:14px; background-color:#ffffff;">
+              <tr>
+                <td class="section-bar" width="6" style="width:6px; background-color:#1d4ed8; border-top:1px solid #1d4ed8; border-bottom:1px solid #1d4ed8; border-radius:14px 0 0 14px; font-size:0;">&nbsp;</td>
+                <td class="section-content-pad" style="padding:20px 22px;">
+                  <div class="section-title-text" style="color:#0f172a; font-weight:bold;">
+                    Investment and Financing Dynamics
+                  </div>
+                    <div class="section-body-text" style="margin-top:10px; color:#334155;">
+                      This period, investment and financing focus on AI finance, AI infrastructure, and AI chip tracks, with large-scale funding concentrated.
+                    </div>
+                    <ul style="margin-top:10px; margin-left:0; padding-left:20px; list-style-type:disc;">
+                      <li class="bullet-item" style="margin-bottom:6px; color:#334155;">AI finance company Ramp raised $1.85 billion, valued at $60 billion;</li>
+                      <li class="bullet-item" style="margin-bottom:6px; color:#334155;">AI infrastructure company Modal Labs raised $750 million, valued at $15.75 billion;</li>
+                      <li class="bullet-item" style="margin-bottom:6px; color:#334155;">Construction robotics company ICON raised $200 million at a $1.4 billion valuation;</li>
+                      <li class="bullet-item" style="margin-bottom:6px; color:#334155;">Photonic AI chip company Salience Labs raised $125 million;</li>
+                      <li class="bullet-item" style="margin-bottom:6px; color:#334155;">AI data and reinforcement learning company Labelbox raised over $100 million, at a pre-money valuation of $1.25 billion;</li>
+                      <li class="bullet-item" style="margin-bottom:6px; color:#334155;">AI healthcare company Suki raised $90 million;</li>
+                      <li class="bullet-item" style="margin-bottom:6px; color:#334155;">AI chip company Mueon raised $65 million.</li>
+                    </ul>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+          <td class="footer-pad" style="padding:16px 36px; background-color:#f8fafc; border-top:1px solid #e5edf5;">
+            <table width="100%" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td style="font-size:clamp(11px, 1.91vw, 16.1px); line-height:1.7; color:#64748b;">
+                  <span style="font-weight:bold; color:#0f172a;">Whale Cloud Technology Co., Ltd.</span>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
+
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?cce0ae41c5fa527dc4b94300b107b027";
+  var s = document.getElementsByTagName("script")[0];
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+<script>
+(function () {
+  var links = document.querySelectorAll('a[data-zoom]');
+  if (!links.length) { return; }
+
+  var BASE_STYLE = 'display:block; margin:auto; flex:0 0 auto; border:0;';
+  var MIN_RATIO = 1.15;
+
+  var overlay = document.createElement('div');
+  overlay.setAttribute('style', 'position:fixed; top:0; left:0; right:0; bottom:0; z-index:99999;' +
+    ' background:rgba(15,23,42,.92); display:none; overflow:auto;' +
+    ' -webkit-overflow-scrolling:touch; cursor:zoom-out;');
+
+  var img = document.createElement('img');
+  img.setAttribute('style', BASE_STYLE);
+  overlay.appendChild(img);
+
+  var closeBtn = document.createElement('div');
+  closeBtn.innerHTML = '&times;';
+  closeBtn.setAttribute('style', 'position:fixed; top:6px; right:18px; color:#fff; cursor:pointer;' +
+    ' font:400 34px/1 Arial, Helvetica, sans-serif; text-shadow:0 1px 4px rgba(0,0,0,.6);');
+  overlay.appendChild(closeBtn);
+
+  document.body.appendChild(overlay);
+
+  var prevOverflow = '';
+  var fitted = true;
+
+  // 适应态缩放比：在遮罩内等比放到尽可能大（可 >1，小图也铺满）
+  function fitScale() {
+    var nw = img.naturalWidth, nh = img.naturalHeight;
+    if (!nw || !nh) { return 0; }
+    return Math.min(overlay.clientWidth * 0.96 / nw, overlay.clientHeight * 0.94 / nh);
+  }
+
+  // 缩放态缩放比：原始像素(1)；原图与适应态尺寸太接近时改为适应态×2，避免点击看不出变化
+  function zoomScale() {
+    var f = fitScale();
+    return (f > MIN_RATIO || f * MIN_RATIO < 1) ? 1 : f * 2;
+  }
+
+  function render() {
+    if (overlay.style.display === 'none') { return; }
+    var nw = img.naturalWidth, nh = img.naturalHeight;
+    if (!nw || !nh) { return; }
+    var s = fitted ? fitScale() : zoomScale();
+    var next = fitted ? zoomScale() : fitScale();
+    img.setAttribute('style', BASE_STYLE +
+      ' width:' + Math.round(nw * s) + 'px; height:' + Math.round(nh * s) + 'px;' +
+      (fitted ? ' border-radius:6px; box-shadow:0 6px 24px rgba(0,0,0,.45);' : '') +
+      ' cursor:' + (next > s ? 'zoom-in' : 'zoom-out') + ';');
+    // 切换后把滚动条落在图片正中，视觉上是"从中心缩放"而不是跳到左上角
+    overlay.scrollLeft = Math.max(0, (overlay.scrollWidth - overlay.clientWidth) / 2);
+    overlay.scrollTop = Math.max(0, (overlay.scrollHeight - overlay.clientHeight) / 2);
+  }
+
+  function open(src) {
+    fitted = true;
+    // 先隐藏：新图未 decode 时 naturalWidth 不可用，避免沿用上一张的 width/height 闪一下变形图
+    img.setAttribute('style', BASE_STYLE + ' visibility:hidden;');
+    img.src = src;
+    overlay.style.display = 'flex';
+    prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    if (img.complete) { render(); }
+  }
+
+  function close() {
+    overlay.style.display = 'none';
+    img.removeAttribute('src');
+    document.body.style.overflow = prevOverflow;
+  }
+
+  img.addEventListener('load', render);
+  window.addEventListener('resize', render);
+  overlay.addEventListener('click', close);
+  img.addEventListener('click', function (e) {
+    e.stopPropagation();
+    fitted = !fitted;
+    render();
+  });
+  document.addEventListener('keydown', function (e) {
+    if (overlay.style.display !== 'none' && (e.key === 'Escape' || e.keyCode === 27)) { close(); }
+  });
+
+  for (var i = 0; i < links.length; i++) {
+    links[i].addEventListener('click', function (e) {
+      var src = this.getAttribute('href');
+      if (!src) { return; }
+      e.preventDefault();
+      open(src);
+    });
+  }
+})();
+</script>
+</body>
+</html>
